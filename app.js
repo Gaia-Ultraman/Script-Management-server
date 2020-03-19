@@ -4,6 +4,9 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 
+//路由导入
+var testRouter = require("./routes/test.js")
+
 var app = express();
 
 // view engine setup
@@ -16,11 +19,13 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
+//路由配置
+app.use("/test",testRouter)
 
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
-  next(createError(404));
+  res.send('404 Not Found! 请检查URL是否填写正确！')
 });
 
 // error handler
@@ -33,5 +38,7 @@ app.use(function(err, req, res, next) {
   res.status(err.status || 500);
   res.render('error');
 });
+
+
 
 module.exports = app;
