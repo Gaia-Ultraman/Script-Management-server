@@ -1,10 +1,10 @@
 var WebSocket = require("ws")
-var http=require('http')
+var http = require('http')
 var parseParams = require("../utils/url.js").parseParams
 let clients = new Map(), managers = new Map();
 
 function SocketServer() {
-    const wss = new WebSocket.Server({ port: 8080,maxPayload: 60000 });
+    const wss = new WebSocket.Server({ port: 8080, maxPayload: 60000 });
     wss.on('connection', function connection(ws, req) {
         let url = req.url.slice(0, req.url.indexOf("?"))
         let params = parseParams(req.url)
@@ -32,21 +32,55 @@ function SocketServer() {
             clients.set(params.id, ws)
             console.log("已经连接设备数目:", clients.size)
             //上线消息通知每个控制台
-            managers.forEach(ws => { if (ws.isAlive) ws.send(JSON.stringify({ my:true, action: "inline", query: { ...params } })) })
+            managers.forEach(ws => { if (ws.isAlive) ws.send(JSON.stringify({data:{cmd:"online",retMsg:params},from:{group:"console",id:"ALL"}})) })
+            // { my: true, action: "online", query: { ...params } }
 
             ws.on('message', function incoming(message) {
                 console.log('received: %s', message);
-                // ws.send(`你发送的消息是:${message}  ****已经替你转发到所有服务端`)
-                managers.forEach(ws => { if (ws.isAlive) ws.send(message) })
+                try {
+                    result = JSON.parse(message)
+                } catch (err) {
+                    console.log("err", err)
+                    return
+                }
+
+                //手机到控制台
+                if (result.dis && result.dis.group == "console") {
+                    if (result.dis.id == "all") {
+                        managers.forEach(w => w.send(message))
+                    } else {
+                        let t = managers.get(result.dis.id)
+                        if (t && t.isAlive) {
+                            t.send(message)
+                        }
+                    }
+                }
+                //手机到手机
+                else if (result.dis && result.dis.group == "phone") {
+                    if (result.dis.id == "all") {
+                        clients.forEach(w => w.send(message))
+                    } else {
+                        let t = clients.get(result.dis.id)
+                        if (t && t.isAlive) {
+                            t.send(message)
+                        }
+                    }
+                }
+                //发送到server
+                else if (result.dis && result.dis.group == "server") {
+                    //更新名字
+                    if (result.data && result.data.cmd == "updateDeviceNumber") {
+                        ws.params.name = result.data.retMsg
+                    }
+                }
             });
 
             ws.on('close', function out(message) {
-                managers.forEach(ws => { if (ws.isAlive) ws.send(JSON.stringify({ my:true, action: "offline", query: { ...params } })) })
+                managers.forEach(w => { if (w.isAlive) w.send(JSON.stringify({data:{cmd:"offline",retMsg:ws.params},from:{group:"console",id:"ALL"}})) })
             });
 
 
         } else if (url === "/manager") {
-
             managers.set(params.id, ws)
             ws.on('message', function incoming(message) {
                 let result = {}
@@ -57,59 +91,48 @@ function SocketServer() {
                     return
                 }
 
-                //LQ的消息格式 //控制台和接口的消息传递
-                if (result.my) {
-                    //获取所有手机
-                    if (result.action == "getAll") {
-                        let t=[]
-                        clients.forEach(v=>{
-                            if(v.isAlive){
-                                t.push({...v.params})
-                            }
-                        })
-                        ws.send(JSON.stringify({my:true,data:t,action:result.action}))
-                    }
-                    //获取图片
-                    else if(result.action == "getPic"){
-                        result.data.forEach(id=>{
-                            if(clients.has(id)){
-                                clients.get(id).send(JSON.stringify({
-                                    data:{codeType:"device",cmd:"getSnapshot"},
-                                    from:{group:"console",id:ws.params.id}
-                                }))
+                //控制台到手机
+                if (result.dis && result.dis.group == "phone") {
+                    //数组id 
+                    if (result.dis.id instanceof Array) {
+                        result.dis.id.forEach(id => {
+                            let t = clients.get(id)
+                            if (t && t.isAlive) {
+                                t.send(message)
                             }
                         })
                     }
-                }
-
-                //JW的消息格式
-                if (result && result.dis && result.data) {
-
-
-                    //=============消息转发==========
-                    if (result.dis.id == "all") {
-                        //发送到全部
-                        clients.forEach(ws => { if (ws.isAlive) ws.send(message) })
-                    } else {
-                        //一台手机响应一个控制台
-                        if (managers.has(result.dis.id)) {
-                            managers.get(id).send(message)
+                    //单个id
+                    else if (typeof result.dis.id == "string") {
+                        let t = clients.get(result.dis.id)
+                        if (t && t.isAlive) {
+                            t.send(message)
                         }
                     }
-                    // if (result.dis.id instanceof Array) {
-                    //     //分组
-                    //     result.dis.id.forEach(id => {
-                            
-                    //     })
-                    // }
+                    //所有
+                    else if (result.dis.id == "all") {
+                        clients.forEach(w => w.send(message))
+                    }
                 }
-                console.log('received: %s', message);
-                // ws.send(`你发送的消息是:${message}  ****已经替你转发到所有客户端`)
+                //控制台发送到server
+                else if (result.dis && result.dis.group == "server") {
+                    //获取所有在线设备
+                    if(result.data.cmd =="getAllOnline"){
+                        let data={cmd:"getAllOnline",retMsg:[]}
+                        clients.forEach(w=>{
+                            if(w.isAlive){
+                                data.retMsg.push(w.params)
+                            }
+                        })
+                        ws.send(JSON.stringify({
+                            data,
+                            from:{group:"console",id:"ALL"}
+                        }))
+                    }
+                }
 
             });
-
         } else {
-            ws.send(JSON.stringify({ status: 1, message: "参数错误" }));
             req.destroy()
         }
 
