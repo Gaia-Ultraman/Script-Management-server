@@ -4,7 +4,7 @@ var parseParams = require("../utils/url.js").parseParams
 let clients = new Map(), managers = new Map();
 
 function SocketServer() {
-    const wss = new WebSocket.Server({ port: 8080, maxPayload: 60000 });
+    const wss = new WebSocket.Server({ port: 8080 });
     wss.on('connection', function connection(ws, req) {
         let url = req.url.slice(0, req.url.indexOf("?"))
         let params = parseParams(req.url)
@@ -32,11 +32,11 @@ function SocketServer() {
             clients.set(params.id, ws)
             console.log("已经连接设备数目:", clients.size)
             //上线消息通知每个控制台
-            managers.forEach(ws => { if (ws.isAlive) ws.send(JSON.stringify({data:{cmd:"online",retMsg:params},from:{group:"console",id:"ALL"}})) })
+            managers.forEach(ws => { if (ws.isAlive) ws.send(JSON.stringify({data:{cmd:"online",retMsg:params},from:{group:"server",id:"ALL"}})) })
             // { my: true, action: "online", query: { ...params } }
 
             ws.on('message', function incoming(message) {
-                console.log('received: %s', message);
+                // console.log('received: %s', message);
                 try {
                     result = JSON.parse(message)
                 } catch (err) {
@@ -76,7 +76,7 @@ function SocketServer() {
             });
 
             ws.on('close', function out(message) {
-                managers.forEach(w => { if (w.isAlive) w.send(JSON.stringify({data:{cmd:"offline",retMsg:ws.params},from:{group:"console",id:"ALL"}})) })
+                managers.forEach(w => { if (w.isAlive) w.send(JSON.stringify({data:{cmd:"offline",retMsg:ws.params},from:{group:"server",id:"ALL"}})) })
             });
 
 
@@ -102,6 +102,10 @@ function SocketServer() {
                             }
                         })
                     }
+                    //所有
+                    else if (result.dis.id == "all") {
+                        clients.forEach(w => w.send(message))
+                    }
                     //单个id
                     else if (typeof result.dis.id == "string") {
                         let t = clients.get(result.dis.id)
@@ -109,10 +113,7 @@ function SocketServer() {
                             t.send(message)
                         }
                     }
-                    //所有
-                    else if (result.dis.id == "all") {
-                        clients.forEach(w => w.send(message))
-                    }
+                    
                 }
                 //控制台发送到server
                 else if (result.dis && result.dis.group == "server") {
@@ -126,7 +127,7 @@ function SocketServer() {
                         })
                         ws.send(JSON.stringify({
                             data,
-                            from:{group:"console",id:"ALL"}
+                            from:{group:"server",id:"ALL"}
                         }))
                     }
                 }

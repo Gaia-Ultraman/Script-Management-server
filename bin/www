@@ -41,7 +41,7 @@ figlet('Server Is Running',function (err, data) {
   console.log(data)
   console.log("\033[40;32m")
   console.log(`HTTP       本地请访问: http://localhost:99    🚀   局域网请访问:http://${LOCAL_IP}:99  `)
-  console.log(`WebSocket  本地请访问: http://localhost:8080  🚀   局域网请访问:http://${LOCAL_IP}:8080`)
+  console.log(`WebSocket  本地请访问: ws://localhost:8080  🚀   局域网请访问:ws://${LOCAL_IP}:8080`)
   console.log("\033[0m")
 });
 
