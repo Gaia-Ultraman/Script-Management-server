@@ -8,6 +8,11 @@ function SocketServer() {
     wss.on('connection', function connection(ws, req) {
         let url = req.url.slice(0, req.url.indexOf("?"))
         let params = parseParams(req.url)
+        //URL编码
+        for(let key in params){
+            params[key]=decodeURI(params[key])
+        }
+        
         if (!params || params.id === undefined) {
             ws.send(JSON.stringify({ status: 1, message: "参数缺失" }));
             req.destroy()
@@ -25,6 +30,7 @@ function SocketServer() {
                     unDo.forEach(function (obj) {
                         ws.send(JSON.stringify(obj))
                     })
+                    clients.get(params.id).unDo=[]
                 }
             }
             ws.isClient = true
