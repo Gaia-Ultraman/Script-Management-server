@@ -1,15 +1,15 @@
 var sqlite3 = require('sqlite3')
 var moment = require('moment')
-var db = new sqlite3.Database("data.db",function(err){
+var db = new sqlite3.Database("dataBase.db",function(err){
     if(err){
         console.log("数据库创建或打开失败!")
     }
 })
-db.prepare('CREATE TABLE Logs (id varchar(255),name varchar(255),data text,createTime text)',function(err){
-    console.log('err:',err)
-})
+// db.run('CREATE TABLE Logs ( deviceId varchar(255),name varchar(255),data text,createTime text )',function(err){
+//     console.log('err:',err)
+// })
 // for(let i=0;i<100;i++){
-//     db.run(`INSERT INTO Logs VALUES (${15654}, 'number${i}', 'data字段')`)
+//     db.run(`INSERT INTO Logs VALUES ('${15654}', 'number${i}', 'data字段','${moment()}')`)
 // }
 
 // db.run('CREATE TABLE Logs (id int,name varchar(255),data text)')
@@ -23,7 +23,7 @@ db.prepare('CREATE TABLE Logs (id varchar(255),name varchar(255),data text,creat
 // })
 
 function getLogs(id,limit,cb){
-    db.get(`SELECT * from Logs WHRER id=${id} LIMIT ${limit}`,function(err, row){
+    db.get(`SELECT * from Logs WHRER deviceId='${id}' LIMIT ${limit}`,function(err, row){
         console.log("getLogs",err)
         if(err){
             cb(null)
@@ -35,8 +35,7 @@ function getLogs(id,limit,cb){
 
 
 function setLogs(...args){
-    console.log(args,moment.locale())
-    db.run(`INSERT INTO Logs VALUES (${args[0]}, '${args[1]}', '${args[2]}' ,'${moment()}')`,function(err){
+    db.run(`INSERT INTO Logs VALUES ('${args[0]}', '${args[1]}', '${args[2]}' ,'${moment()}')`,function(err){
         console.log("getLogs err",err)
     })
 }
