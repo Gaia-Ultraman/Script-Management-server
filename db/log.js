@@ -22,9 +22,8 @@ var db = new sqlite3.Database("dataBase.db",function(err){
 //     console.log("GET",err)
 // })
 
-function getLogs(id,limit,cb){
-    db.get(`SELECT * from Logs WHRER deviceId='${id}' LIMIT ${limit}`,function(err, row){
-        console.log("getLogs",err)
+function getLogs(deviceId,limit,cb){
+    db.all(`SELECT * from Logs WHERE deviceId ='${deviceId}' LIMIT ${limit}`,function(err, row){
         if(err){
             cb(null)
         }else{
@@ -36,7 +35,7 @@ function getLogs(id,limit,cb){
 
 function setLogs(...args){
     db.run(`INSERT INTO Logs VALUES ('${args[0]}', '${args[1]}', '${args[2]}' ,'${moment()}')`,function(err){
-        console.log("getLogs err",err)
+        console.log("setLogs err",err)
     })
 }
 
