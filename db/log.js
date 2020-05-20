@@ -5,7 +5,7 @@ var db = new sqlite3.Database("data.db",function(err){
         console.log("数据库创建或打开失败!")
     }
 })
-db.prepare('CREATE TABLE Logs (id int,name varchar(255),data text,createTime text)',function(err){
+db.prepare('CREATE TABLE Logs (id varchar(255),name varchar(255),data text,createTime text)',function(err){
     console.log('err:',err)
 })
 // for(let i=0;i<100;i++){
@@ -22,8 +22,8 @@ db.prepare('CREATE TABLE Logs (id int,name varchar(255),data text,createTime tex
 //     console.log("GET",err)
 // })
 
-function getLogs(id,cb){
-    db.get(`SELECT * from Logs WHRER id=${id} LIMIT 10`,function(err, row){
+function getLogs(id,limit,cb){
+    db.get(`SELECT * from Logs WHRER id=${id} LIMIT ${limit}`,function(err, row){
         console.log("getLogs",err)
         if(err){
             cb(null)

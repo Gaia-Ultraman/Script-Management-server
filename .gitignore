@@ -1,4 +1,4 @@
 node_modules
 temp
 .history
-data.db
+# data.db

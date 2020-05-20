@@ -5,7 +5,7 @@ var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 
 //路由导入
-var testRouter = require("./routes/test.js")
+var router = require("./routes/log.js")
 
 var app = express();
 
@@ -20,7 +20,7 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 //路由配置
-app.use("/test",testRouter)
+app.use("/api",router)
 
 
 // catch 404 and forward to error handler
