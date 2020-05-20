@@ -1,6 +1,7 @@
 var WebSocket = require("ws")
 var http = require('http')
 var parseParams = require("../utils/url.js").parseParams
+var {setLogs} = require('../db/log')
 let clients = new Map(), managers = new Map();
 
 function SocketServer() {
@@ -79,6 +80,12 @@ function SocketServer() {
                         ws.params.name = result.data.retMsg
                     }
                 }
+
+                //回应之后把日志存储起来 如果是base64的，把值置空再存
+                if(result.data.msgType == "base64"){
+                    result.data.retMsg = ''
+                }
+                setLogs(params.id,params.name,JSON.stringify(result))
             });
 
             ws.on('close', function out(message) {
