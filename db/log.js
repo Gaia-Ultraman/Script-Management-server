@@ -35,7 +35,7 @@ function getLogs(deviceId,limit,cb){
 
 function setLogs(...args){
     db.run(`INSERT INTO Logs VALUES ('${args[0]}', '${args[1]}', '${args[2]}' ,'${moment()}')`,function(err){
-        console.log("setLogs err",err)
+        
     })
 }
 
