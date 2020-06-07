@@ -4,15 +4,15 @@ var parseParams = require("../utils/url.js").parseParams
 let clients = new Map(), managers = new Map();
 
 function SocketServer() {
-    const wss = new WebSocket.Server({ port: 8080 });
+    const wss = new WebSocket.Server({ port: 19294 });
     wss.on('connection', function connection(ws, req) {
         let url = req.url.slice(0, req.url.indexOf("?"))
         let params = parseParams(req.url)
         //URL编码
-        for(let key in params){
-            params[key]=decodeURI(params[key])
+        for (let key in params) {
+            params[key] = decodeURI(params[key])
         }
-        
+
         if (!params || params.id === undefined) {
             ws.send(JSON.stringify({ status: 1, message: "参数缺失" }));
             req.destroy()
@@ -30,15 +30,17 @@ function SocketServer() {
                     unDo.forEach(function (obj) {
                         ws.send(JSON.stringify(obj))
                     })
-                    clients.get(params.id).unDo=[]
+                    clients.get(params.id).unDo = []
                 }
             }
+            //把客户端传的参数存起来
+            ws.params = params
             ws.isClient = true
             ws.unDo = new Array()
             clients.set(params.id, ws)
             console.log("已经连接设备数目:", clients.size)
             //上线消息通知每个控制台
-            managers.forEach(ws => { if (ws.isAlive) ws.send(JSON.stringify({data:{cmd:"online",retMsg:params},from:{group:"server",id:"ALL"}})) })
+            managers.forEach(ws => { if (ws.isAlive) ws.send(JSON.stringify({ data: { cmd: "online", retMsg: params }, from: { group: "server", id: "ALL" } })) })
             // { my: true, action: "online", query: { ...params } }
 
             ws.on('message', function incoming(message) {
@@ -82,7 +84,7 @@ function SocketServer() {
             });
 
             ws.on('close', function out(message) {
-                managers.forEach(w => { if (w.isAlive) w.send(JSON.stringify({data:{cmd:"offline",retMsg:ws.params},from:{group:"server",id:"ALL"}})) })
+                managers.forEach(w => { if (w.isAlive) w.send(JSON.stringify({ data: { cmd: "offline", retMsg: ws.params }, from: { group: "server", id: "ALL" } })) })
             });
 
 
@@ -104,36 +106,50 @@ function SocketServer() {
                         result.dis.id.forEach(id => {
                             let t = clients.get(id)
                             if (t && t.isAlive) {
-                                t.send(message)
+                                if (result.data.cmd == 'runScript' && result.data.UI != '') {
+                                    t.send(message.replace('DEVICENUMBER', t.params.name)) 
+                                } else{
+                                    t.send(message)
+                                }
+                            } else {
+                                t.unDo.push(message)
                             }
                         })
                     }
                     //所有
                     else if (result.dis.id == "all") {
-                        clients.forEach(w => w.send(message))
+                        clients.forEach(t => {
+                            if (t && t.isAlive) {
+                                t.send(message)
+                            } else {
+                                t.unDo.push(message)
+                            }
+                        })
                     }
                     //单个id
                     else if (typeof result.dis.id == "string") {
                         let t = clients.get(result.dis.id)
                         if (t && t.isAlive) {
                             t.send(message)
+                        } else {
+                            t.unDo.push(message)
                         }
                     }
-                    
+
                 }
                 //控制台发送到server
                 else if (result.dis && result.dis.group == "server") {
                     //获取所有在线设备
-                    if(result.data.cmd =="getAllOnline"){
-                        let data={cmd:"getAllOnline",retMsg:[]}
-                        clients.forEach(w=>{
-                            if(w.isAlive){
+                    if (result.data.cmd == "getAllOnline") {
+                        let data = { cmd: "getAllOnline", retMsg: [] }
+                        clients.forEach(w => {
+                            if (w.isAlive) {
                                 data.retMsg.push(w.params)
                             }
                         })
                         ws.send(JSON.stringify({
                             data,
-                            from:{group:"server",id:"ALL"}
+                            from: { group: "server", id: "ALL" }
                         }))
                     }
                 }
