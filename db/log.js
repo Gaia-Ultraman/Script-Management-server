@@ -5,9 +5,9 @@ var db = new sqlite3.Database("dataBase.db",function(err){
         console.log("数据库创建或打开失败!")
     }
 })
-// db.run('CREATE TABLE Logs ( deviceId varchar(255),name varchar(255),data text,createTime text )',function(err){
-//     console.log('err:',err)
-// })
+db.run('CREATE TABLE IF NOT EXISTS Logs ( deviceId varchar(255),name varchar(255),data text,createTime text )',function(err){
+    console.log('err:',err)
+})
 // for(let i=0;i<100;i++){
 //     db.run(`INSERT INTO Logs VALUES ('${15654}', 'number${i}', 'data字段','${moment()}')`)
 // }
