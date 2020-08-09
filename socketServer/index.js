@@ -1,5 +1,6 @@
 var WebSocket = require("ws")
 var http = require('http')
+var natsort = require('./../utils/sort');
 var parseParams = require("../utils/url.js").parseParams
 var {setLogs} = require('../db/log')
 let clients = new Map(), managers = new Map();
@@ -149,11 +150,17 @@ function SocketServer() {
                     //获取所有在线设备
                     if (result.data.cmd == "getAllOnline") {
                         let data = { cmd: "getAllOnline", retMsg: [] }
+                        let tempData=[]
                         clients.forEach(w => {
                             if (w.isAlive) {
-                                data.retMsg.push(w.params)
+                                tempData.push(w.params)
                             }
                         })
+                        let sorter=natsort()
+                        data.retMsg=tempData.sort(function(a,b){
+                            return sorter(a.name,b.name)
+                        })
+                        
                         ws.send(JSON.stringify({
                             data,
                             from: { group: "server", id: "ALL" }
