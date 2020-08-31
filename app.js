@@ -5,7 +5,8 @@ var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 
 //路由导入
-var router = require("./routes/log.js")
+var LogRouter = require("./routes/log.js")
+var DataBaseRouter = require("./routes/dataBase.js")
 
 var app = express();
 
@@ -24,7 +25,8 @@ app.use(function(req, res, next) {
   next()
 })
 //路由配置
-app.use("/api",router)
+app.use("/api",LogRouter)
+app.use("/api",DataBaseRouter)
 
 
 // catch 404 and forward to error handler
